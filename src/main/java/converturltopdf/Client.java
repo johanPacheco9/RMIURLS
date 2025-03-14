@@ -24,30 +24,45 @@ public class Client {
 
             // Dirección del servidor donde corre el servicio RMI
             String serverAddress = "rmi://192.168.1.6:7084/ConvertServer";
+            System.out.println("Conectando a: " + serverAddress);
             IConvertion service = (IConvertion) Naming.lookup(serverAddress);
 
-            // Enviar URLs al servidor para conversión
-            List<byte[]> pdfs = service.ejecutarConversion(urls);
+            System.out.println("Solicitando conversión para " + urls.size() + " URLs");
+            List<PDFResult> pdfResults = service.ejecutarConversion(urls);
+            System.out.println("Cantidad de PDFs recibidos en el cliente: " + pdfResults.size());
 
-            // Guardar los archivos en el cliente
-            guardarPDFsEnCliente(pdfs, urls);
+            // Mostrar logs: nombre y tamaño de cada PDF
+            for (int i = 0; i < pdfResults.size(); i++) {
+                PDFResult pdfResult = pdfResults.get(i);
+                byte[] pdfData = pdfResult.getPdfData();
+                System.out.println("PDF " + (i+1) + " (" + pdfResult.getFileName() + ") tiene " + pdfData.length + " bytes");
+                if (pdfData.length > 0) {
+                    System.out.println("Primer byte: " + pdfData[0]);
+                }
+            }
 
+            // Guardar los archivos en el cliente usando el nombre recibido
+            guardarPDFs(pdfResults);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // Método para guardar los PDFs en el cliente
-    private static void guardarPDFsEnCliente(List<byte[]> pdfs, List<String> urls) {
-        String carpetaDestino = "D:/PDFsCliente/";
-        
-        // Crear la carpeta si no existe
-        new java.io.File(carpetaDestino).mkdirs();
+    private static void guardarPDFs(List<PDFResult> pdfResults) {
+        String carpetaDestino = "D:/obtenidos/";
+        java.io.File destDir = new java.io.File(carpetaDestino);
+        if (!destDir.exists()) {
+            destDir.mkdirs();
+            System.out.println("Carpeta creada: " + carpetaDestino);
+        }
 
-        for (int i = 0; i < pdfs.size(); i++) {
-            byte[] pdfData = pdfs.get(i);
-            String fileName = carpetaDestino + "archivo_" + (i + 1) + ".pdf";
-
+        for (PDFResult result : pdfResults) {
+            // Extraer el nombre base del archivo generado en el nodo
+            String fileName = new java.io.File(result.getFileName()).getName();
+            // Se guarda en la carpeta destino
+            fileName = carpetaDestino + fileName;
+            byte[] pdfData = result.getPdfData();
+            System.out.println("Guardando archivo " + fileName + " con " + pdfData.length + " bytes");
             try (FileOutputStream fos = new FileOutputStream(fileName)) {
                 fos.write(pdfData);
                 System.out.println("PDF descargado en: " + fileName);

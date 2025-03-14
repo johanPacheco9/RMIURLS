@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface IConvertion extends Remote {
     
-    List<byte[]> ejecutarConversion(List<String> urls) throws RemoteException;
+    List<PDFResult> ejecutarConversion(List<String> urls) throws RemoteException;
 }
